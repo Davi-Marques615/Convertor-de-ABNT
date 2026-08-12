@@ -8,6 +8,7 @@
 
     <title>Conversor ABNT</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
 </head>
 <body>
     <main class="app-shell">
@@ -28,7 +29,7 @@
             {% endif %}
         {% endwith %}
 
-        <form class="abnt-form" action="{{ url_for('gerar_documento') }}" method="post" novalidate>
+        <form class="abnt-form" action="{{ url_for('gerar_documento') }}" method="post" enctype="multipart/form-data" novalidate>
             <p class="required-note">Campos marcados como obrigatórios precisam ser preenchidos para gerar o DOCX.</p>
             <section class="form-section" aria-labelledby="dados-gerais-title">
                 <h2 id="dados-gerais-title">Dados gerais</h2>
@@ -258,6 +259,26 @@
                                 </span>
                                 <textarea id="secao_conteudo_1" name="secao_conteudo" rows="10"></textarea>
                             </label>
+
+                            <div class="field field-full image-settings-group">
+                                <div class="image-settings-heading">
+                                    <span>Imagens da seção (até 2)</span>
+                                    <small>Configurações ABNT: posição, largura, título/legenda e fonte.</small>
+                                </div>
+                                <div class="section-images-grid">
+                                    <div class="image-slot">
+                                        <strong>Imagem 1</strong>
+                                        <input type="file" id="secao_imagem_1_1" name="secao_imagem_1_1" accept=".png,.jpg,.jpeg,.gif,.bmp,.tif,.tiff">
+                                        <div class="image-options">
+                                            <label class="field"><span>Posição</span><select name="secao_imagem_1_1_alinhamento"><option value="center">Centralizada</option><option value="left">À esquerda</option><option value="right">À direita</option></select></label>
+                                            <label class="field"><span>Largura (mm)</span><input type="number" name="secao_imagem_1_1_largura" min="20" max="170" value="100"></label>
+                                            <label class="field"><span>Título/legenda</span><input type="text" name="secao_imagem_1_1_titulo" placeholder="Ex.: Figura 1 – ..."></label>
+                                            <label class="field"><span>Fonte</span><input type="text" name="secao_imagem_1_1_fonte" placeholder="Ex.: Elaborado pelo autor (2026)"></label>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
 
                             <div class="field field-full work-section-actions">
                                 <button type="button" class="secondary-button remove-section" aria-label="Remover seção 1">Remover seção</button>
