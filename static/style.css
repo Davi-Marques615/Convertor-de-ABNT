@@ -522,9 +522,22 @@ textarea:required {
     }
 
     .section-heading-row,
-    .form-actions {
+    .form-actions,
+    .work-section-actions {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .author-control {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .author-control input,
+    .author-control .remove-author,
+    .work-section-actions .secondary-button {
+        width: 100%;
+        min-width: 0;
     }
 
     .primary-button,
@@ -556,6 +569,14 @@ textarea:required {
 
     .form-section {
         padding: 14px;
+    }
+
+    .author-control {
+        gap: 10px;
+    }
+
+    .work-section {
+        padding: 12px;
     }
 
     input,
