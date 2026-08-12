@@ -274,7 +274,12 @@ textarea:required {
 .author-control {
     display: flex;
     gap: 8px;
-    align-items: flex-end;
+    align-items: stretch;
+    min-width: 0;
+}
+
+.author-field {
+    min-width: 0;
 }
 
 .author-control input {
@@ -472,6 +477,12 @@ textarea:required {
     color: var(--color-danger);
 }
 
+@media (max-width: 900px) {
+    .field-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 760px) {
     .app-shell {
         width: min(100% - 24px, var(--max-width));
@@ -499,6 +510,16 @@ textarea:required {
     .form-actions {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .author-control {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .author-control input,
+    .author-control .remove-author {
+        width: 100%;
     }
 
     .primary-button,
