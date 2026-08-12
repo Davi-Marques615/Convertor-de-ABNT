@@ -92,6 +92,11 @@
                     <textarea id="secao_conteudo_${sectionId}" name="secao_conteudo" rows="10"></textarea>
                 </label>
 
+                <div class="field field-full image-settings-group">
+                    <div class="image-settings-heading"><span>Imagens da seção (até 2)</span><small>Configurações ABNT: posição, largura, título/legenda e fonte.</small></div>
+                    <div class="section-images-grid">${criarSlotImagem(sectionId, 1)}</div>
+                </div>
+
                 <div class="field field-full work-section-actions">
                     <button type="button" class="secondary-button remove-section" aria-label="Remover seção ${sectionId}">Remover seção</button>
                 </div>
@@ -101,6 +106,21 @@
         secoesContainer.appendChild(fieldset);
         fieldset.querySelector("input").focus();
         mostrarNotificacao("Nova seção adicionada", "success");
+    }
+
+    function criarSlotImagem(sectionId, slot) {
+        const prefixo = `secao_imagem_${sectionId}_${slot}`;
+        return `
+            <div class="image-slot">
+                <strong>Imagem ${slot}</strong>
+                <input type="file" id="${prefixo}" name="${prefixo}" accept=".png,.jpg,.jpeg,.gif,.bmp,.tif,.tiff">
+                <div class="image-options">
+                    <label class="field"><span>Posição</span><select name="${prefixo}_alinhamento"><option value="center">Centralizada</option><option value="left">À esquerda</option><option value="right">À direita</option></select></label>
+                    <label class="field"><span>Largura (mm)</span><input type="number" name="${prefixo}_largura" min="20" max="170" value="100"></label>
+                    <label class="field"><span>Título/legenda</span><input type="text" name="${prefixo}_titulo" placeholder="Ex.: Figura ${slot} – ..."></label>
+                    <label class="field"><span>Fonte</span><input type="text" name="${prefixo}_fonte" placeholder="Ex.: Elaborado pelo autor (2026)"></label>
+                </div>
+            </div>`;
     }
 
     function removerSecao(event) {
@@ -163,6 +183,16 @@
             if (conteudoTextarea) {
                 conteudoTextarea.id = `secao_conteudo_${numero}`;
             }
+            fieldset.querySelectorAll(".image-slot").forEach(function (slot, slotIndex) {
+                const slotNumero = slotIndex + 1;
+                const prefixo = `secao_imagem_${numero}_${slotNumero}`;
+                const arquivo = slot.querySelector("input[type='file']");
+                if (arquivo) { arquivo.id = prefixo; arquivo.name = prefixo; }
+                slot.querySelectorAll("select, input:not([type='file'])").forEach(function (campo) {
+                    const sufixo = campo.name.split("_").slice(-1)[0];
+                    if (["alinhamento", "largura", "titulo", "fonte"].includes(sufixo)) campo.name = `${prefixo}_${sufixo}`;
+                });
+            });
             if (removeButton) {
                 removeButton.setAttribute("aria-label", `Remover seção ${numero}`);
             }
