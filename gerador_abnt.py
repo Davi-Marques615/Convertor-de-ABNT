@@ -10,6 +10,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
+from docx.enum.style import WD_STYLE_TYPE
 
 
 @dataclass(frozen=True)
@@ -215,6 +216,7 @@ class ABNTDocumentGenerator:
             numero_formatado = self._gerar_numero_secao(nivel)
             self._adicionar_titulo_numerado(numero_formatado, secao["titulo"], nivel=nivel)
             self._adicionar_conteudo_textual(secao.get("conteudo", ""))
+            self._adicionar_imagens_da_secao(secao.get("imagens", []), numero_formatado)
 
     def _gerar_numero_secao(self, nivel: int) -> str:
         # Incrementa o nível atual e reseta os subníveis
@@ -250,6 +252,34 @@ class ABNTDocumentGenerator:
                 self._adicionar_citacao_longa(bloco.removeprefix(">>>").strip())
             else:
                 self._adicionar_paragrafo(bloco, alinhamento=WD_ALIGN_PARAGRAPH.JUSTIFY)
+
+    def _adicionar_imagens_da_secao(self, imagens: Any, numero_secao: str) -> None:
+        if not isinstance(imagens, list):
+            return
+        for indice, imagem in enumerate(imagens[:1], start=1):
+            if not isinstance(imagem, dict) or not imagem.get("caminho"):
+                continue
+            alinhamentos = {"left": WD_ALIGN_PARAGRAPH.LEFT, "right": WD_ALIGN_PARAGRAPH.RIGHT, "center": WD_ALIGN_PARAGRAPH.CENTER}
+            alinhamento = alinhamentos.get(str(imagem.get("alinhamento", "center")).lower(), WD_ALIGN_PARAGRAPH.CENTER)
+            titulo = str(imagem.get("titulo", "")).strip()
+            fonte = str(imagem.get("fonte", "")).strip()
+            if titulo:
+                legenda = self._adicionar_paragrafo(titulo, alinhamento=alinhamento, recuo=False, tamanho=self.config.font_size_small)
+                legenda.paragraph_format.line_spacing = 1.0
+            try:
+                largura = max(20.0, min(float(imagem.get("largura_mm", 100)), 170.0))
+                paragrafo = self.documento.add_paragraph()
+                paragrafo.alignment = alinhamento
+                paragrafo.paragraph_format.line_spacing = 1.0
+                paragrafo.paragraph_format.first_line_indent = None
+                paragrafo.add_run().add_picture(str(imagem["caminho"]), width=Mm(largura))
+            except (OSError, ValueError, TypeError):
+                continue
+            if fonte:
+                fonte_paragrafo = self._adicionar_paragrafo(fonte, alinhamento=WD_ALIGN_PARAGRAPH.LEFT, recuo=False, tamanho=self.config.font_size_small)
+                fonte_paragrafo.paragraph_format.line_spacing = 1.0
+            if indice < len(imagens[:1]):
+                self._adicionar_espaco(1)
 
     def _criar_elementos_pos_textuais(self) -> None:
         referencias = self._lista("referencias")
