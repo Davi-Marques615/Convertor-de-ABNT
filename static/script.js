@@ -8,6 +8,7 @@
     const adicionarSecaoButton = document.getElementById("adicionar-secao");
     const anoInput = document.getElementById("ano");
     const submitButton = form ? form.querySelector('button[type="submit"]') : null;
+    const STORAGE_KEY = "convertor_abnt_rascunho_v2";
 
     if (!form) {
         return;
@@ -19,6 +20,9 @@
     anoInput?.addEventListener("input", limitarAnoAQuatroDigitos);
     form.addEventListener("submit", validarFormulario);
     form.addEventListener("reset", restaurarFormulario);
+    form.addEventListener("input", salvarRascunho);
+    form.addEventListener("change", salvarRascunho);
+    restaurarRascunho();
 
     // Adicionar autor
     function adicionarAutor(event) {
@@ -107,6 +111,7 @@
         secoesContainer.appendChild(fieldset);
         fieldset.querySelector("input").focus();
         mostrarNotificacao("Nova seção adicionada", "success");
+        salvarRascunho();
     }
 
     function criarSlotImagem(sectionId, slot) {
@@ -149,6 +154,7 @@
         });
         secoesContainer.appendChild(copia);
         renumerarSecoes();
+        salvarRascunho();
         const titulo = copia.querySelector("input[name='secao_titulo']");
         titulo?.focus();
         mostrarNotificacao("Seção duplicada. Se houver imagem, selecione o arquivo novamente.", "success");
@@ -166,6 +172,7 @@
             fieldset.remove();
             renumerarSecoes();
             mostrarNotificacao("Seção removida com sucesso", "success");
+            salvarRascunho();
             return;
         }
 
@@ -237,6 +244,46 @@
     // Limitar ano a 4 dígitos
     function limitarAnoAQuatroDigitos(event) {
         event.target.value = event.target.value.replace(/\D/g, "").slice(0, 4);
+    }
+
+    function obterDadosDoFormulario() {
+        const dados = {};
+        Array.from(form.elements).forEach(function (campo) {
+            if (!campo.name || campo.type === "file" || campo.type === "submit" || campo.type === "reset" || campo.disabled) return;
+            if (campo.type === "checkbox" || campo.type === "radio") {
+                if (!campo.checked) return;
+            }
+            if (!dados[campo.name]) dados[campo.name] = [];
+            dados[campo.name].push(campo.value);
+        });
+        return dados;
+    }
+
+    function salvarRascunho() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(obterDadosDoFormulario()));
+        } catch (erro) {
+        }
+    }
+
+    function restaurarRascunho() {
+        let dados;
+        try { dados = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (erro) { return; }
+        if (!dados) return;
+
+        const autoresSalvos = Object.keys(dados).filter(function (nome) { return /^autor_\d+$/.test(nome); }).length;
+        while (autoresContainer.querySelectorAll("input[name^='autor_']").length < autoresSalvos) adicionarAutor({ preventDefault: function () {} });
+        const secoesSalvas = (dados.secao_titulo || []).length;
+        while (secoesContainer.querySelectorAll(".work-section").length < secoesSalvas) adicionarSecao({ preventDefault: function () {} });
+
+        Object.keys(dados).forEach(function (nome) {
+            const campos = form.querySelectorAll(`[name="${CSS.escape(nome)}"]`);
+            (dados[nome] || []).forEach(function (valor, indice) {
+                if (campos[indice]) campos[indice].value = valor;
+            });
+        });
+        renumerarAutores();
+        renumerarSecoes();
     }
 
     // Validar formulário
