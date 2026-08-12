@@ -15,7 +15,7 @@
 
     adicionarAutorButton?.addEventListener("click", adicionarAutor);
     adicionarSecaoButton?.addEventListener("click", adicionarSecao);
-    secoesContainer?.addEventListener("click", removerSecao);
+    secoesContainer?.addEventListener("click", manipularAcaoSecao);
     anoInput?.addEventListener("input", limitarAnoAQuatroDigitos);
     form.addEventListener("submit", validarFormulario);
     form.addEventListener("reset", restaurarFormulario);
@@ -98,6 +98,7 @@
                 </div>
 
                 <div class="field field-full work-section-actions">
+                    <button type="button" class="secondary-button duplicate-section" aria-label="Duplicar seção ${sectionId}">Duplicar seção</button>
                     <button type="button" class="secondary-button remove-section" aria-label="Remover seção ${sectionId}">Remover seção</button>
                 </div>
             </div>
@@ -121,6 +122,36 @@
                     <label class="field"><span>Fonte</span><input type="text" name="${prefixo}_fonte" placeholder="Ex.: Elaborado pelo autor (2026)"></label>
                 </div>
             </div>`;
+    }
+
+    function manipularAcaoSecao(event) {
+        if (event.target.closest(".duplicate-section")) {
+            duplicarSecao(event);
+            return;
+        }
+        if (event.target.closest(".remove-section")) {
+            removerSecao(event);
+        }
+    }
+
+    function duplicarSecao(event) {
+        event.preventDefault();
+        const original = event.target.closest(".work-section");
+        if (!original) return;
+
+        const copia = original.cloneNode(true);
+        copia.querySelectorAll("input[type='file']").forEach(function (campo) {
+            campo.value = "";
+        });
+        copia.querySelectorAll("[aria-invalid='true']").forEach(function (campo) {
+            campo.removeAttribute("aria-invalid");
+            campo.style.borderColor = "";
+        });
+        secoesContainer.appendChild(copia);
+        renumerarSecoes();
+        const titulo = copia.querySelector("input[name='secao_titulo']");
+        titulo?.focus();
+        mostrarNotificacao("Seção duplicada. Se houver imagem, selecione o arquivo novamente.", "success");
     }
 
     function removerSecao(event) {
@@ -170,6 +201,7 @@
             const nivelSelect = fieldset.querySelector("select[name='secao_nivel']");
             const conteudoTextarea = fieldset.querySelector("textarea[name='secao_conteudo']");
             const removeButton = fieldset.querySelector(".remove-section");
+            const duplicateButton = fieldset.querySelector(".duplicate-section");
 
             fieldset.setAttribute("data-section-index", numero);
             legend.textContent = `Seção ${numero}`;
@@ -195,6 +227,9 @@
             });
             if (removeButton) {
                 removeButton.setAttribute("aria-label", `Remover seção ${numero}`);
+            }
+            if (duplicateButton) {
+                duplicateButton.setAttribute("aria-label", `Duplicar seção ${numero}`);
             }
         });
     }
