@@ -8,7 +8,7 @@
 
     <title>Conversor ABNT</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 </head>
 <body>
     <main class="app-shell">
@@ -262,7 +262,7 @@
 
                             <div class="field field-full image-settings-group">
                                 <div class="image-settings-heading">
-                                    <span>Imagens da seção (até 2)</span>
+                                    <span>Imagem da seção (opcional)</span>
                                     <small>Configurações ABNT: posição, largura, título/legenda e fonte.</small>
                                 </div>
                                 <div class="section-images-grid">
@@ -281,6 +281,7 @@
                             </div>
 
                             <div class="field field-full work-section-actions">
+                                <button type="button" class="secondary-button duplicate-section" aria-label="Duplicar seção 1">Duplicar seção</button>
                                 <button type="button" class="secondary-button remove-section" aria-label="Remover seção 1">Remover seção</button>
                             </div>
                         </div>
