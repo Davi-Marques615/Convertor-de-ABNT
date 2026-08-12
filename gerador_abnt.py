@@ -47,6 +47,15 @@ class ABNTDocumentGenerator:
     def _configurar_documento(self) -> None:
         self._configurar_secao(self.documento.sections[0])
         self._configurar_estilos()
+        self._ativar_atualizacao_automatica_do_sumario()
+
+    def _ativar_atualizacao_automatica_do_sumario(self) -> None:
+        settings = self.documento.settings.element
+        update_fields = settings.find(qn("w:updateFields"))
+        if update_fields is None:
+            update_fields = OxmlElement("w:updateFields")
+            settings.append(update_fields)
+        update_fields.set(qn("w:val"), "true")
 
     def _configurar_secao(self, secao: Any) -> None:
         secao.page_width = Mm(210)
