@@ -4,8 +4,10 @@ from datetime import datetime
 from pathlib import Path
 from re import sub
 from uuid import uuid4
+import tempfile
 
 from flask import Flask, flash, redirect, render_template, request, send_file, url_for
+from werkzeug.utils import secure_filename
 
 from gerador_abnt import gerar_documento_abnt
 
@@ -13,6 +15,8 @@ from gerador_abnt import gerar_documento_abnt
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "output"
 ALLOWED_EXTENSION = ".docx"
+ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff"}
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "altere-esta-chave-em-producao"
@@ -31,10 +35,11 @@ def index():
 @app.route("/gerar", methods=["POST"])
 def gerar_documento():
     try:
-        dados = _coletar_dados_formulario()
-        _validar_dados_obrigatorios(dados)
-        caminho_saida = _criar_caminho_saida(dados["titulo"])
-        arquivo_gerado = gerar_documento_abnt(dados, caminho_saida)
+        with tempfile.TemporaryDirectory(prefix="abnt_imagens_") as pasta_temporaria:
+            dados = _coletar_dados_formulario(Path(pasta_temporaria))
+            _validar_dados_obrigatorios(dados)
+            caminho_saida = _criar_caminho_saida(dados["titulo"])
+            arquivo_gerado = gerar_documento_abnt(dados, caminho_saida)
         return send_file(
             arquivo_gerado,
             as_attachment=True,
@@ -55,9 +60,9 @@ def health_check():
     return {"status": "ok"}
 
 
-def _coletar_dados_formulario() -> dict[str, object]:
+def _coletar_dados_formulario(pasta_temporaria: Path) -> dict[str, object]:
     autores = _obter_autores_por_campos_numerados()
-    secoes = _obter_secoes_por_campos_numerados()
+    secoes = _obter_secoes_por_campos_numerados(pasta_temporaria)
 
     return {
         "autores": autores,
@@ -142,20 +147,45 @@ def _obter_autores_por_campos_numerados() -> list[str]:
     return autores
 
 
-def _obter_secoes_por_campos_numerados() -> list[dict[str, str]]:
+def _obter_secoes_por_campos_numerados(pasta_temporaria: Path) -> list[dict[str, object]]:
     titulos = request.form.getlist("secao_titulo")
     niveis = request.form.getlist("secao_nivel")
     conteudos = request.form.getlist("secao_conteudo")
-    
     secoes = []
-    for t, n, c in zip(titulos, niveis, conteudos):
+    for indice, (t, n, c) in enumerate(zip(titulos, niveis, conteudos), start=1):
         if t.strip():
             secoes.append({
                 "titulo": t.strip(),
                 "nivel": int(n) if n.isdigit() else 1,
-                "conteudo": c.strip()
+                "conteudo": c.strip(),
+                "imagens": _obter_imagens_da_secao(indice, pasta_temporaria),
             })
     return secoes
+
+
+def _obter_imagens_da_secao(indice: int, pasta_temporaria: Path) -> list[dict[str, object]]:
+    imagens = []
+    for slot in (1,):
+        arquivo = request.files.get(f"secao_imagem_{indice}_{slot}")
+        if not arquivo or not arquivo.filename:
+            continue
+        extensao = Path(secure_filename(arquivo.filename)).suffix.lower()
+        if extensao not in ALLOWED_IMAGE_EXTENSIONS:
+            raise ValidationError(f"A imagem {slot} da seção {indice} deve estar em PNG, JPG, GIF, BMP ou TIFF.")
+        conteudo = arquivo.read()
+        if len(conteudo) > MAX_IMAGE_BYTES:
+            raise ValidationError(f"A imagem {slot} da seção {indice} excede o limite de 10 MB.")
+        nome = f"secao_{indice}_imagem_{slot}{extensao}"
+        caminho = pasta_temporaria / nome
+        caminho.write_bytes(conteudo)
+        imagens.append({
+            "caminho": str(caminho),
+            "alinhamento": request.form.get(f"secao_imagem_{indice}_{slot}_alinhamento", "center"),
+            "largura_mm": request.form.get(f"secao_imagem_{indice}_{slot}_largura", "100"),
+            "titulo": request.form.get(f"secao_imagem_{indice}_{slot}_titulo", "").strip(),
+            "fonte": request.form.get(f"secao_imagem_{indice}_{slot}_fonte", "").strip(),
+        })
+    return imagens
 
 
 def _criar_caminho_saida(titulo: str) -> Path:
